@@ -687,3 +687,36 @@ class PartitionGUID(Enum):
 			
 			# Logic here to interface with 'sgdisk' or 'parted' to set the type GUID
 			# Example: self.run_command(f"sgdisk -t {part_mod.partn}:{target_guid} {part_mod.dev_path}")
+class DeviceHandler:
+    def __init__(self) -> None:
+        self._devices: dict[Path, BDevice] = {}
+        # New: Auto-select handler based on Silicon DNA
+        self.arch_handler = self._get_arch_handler()
+        self._partition_table = self.arch_handler.get_default_partition_table()
+        self.load_devices()
+
+    def _get_arch_handler(self) -> BaseArchHandler:
+        import platform
+        arch = platform.machine().lower()
+        if 'riscv64' in arch: return Riscv64Handler()
+        if 'aarch64' in arch or 'arm64' in arch: return Arm64Handler()
+        return X86_64Handler()
+
+    def format(self, fs_type: FilesystemType, path: Path, extra_args: list[str] = []) -> None:
+        # Check Issue #4279
+        if fs_type == FilesystemType.Ntfs:
+            raise DiskError("NTFS is not supported for Arch Linux root/system partitions.")
+
+        # Get optimized options from the arch handler
+        options = self.arch_handler.get_format_options(fs_type)
+        options.extend(extra_args)
+        
+        # ... standard mkfs logic ...
+
+    def _setup_partition(self, part_mod: PartitionModification, block_device: BDevice, disk: Disk, requires_delete: bool) -> None:
+        # ... existing geometry logic ...
+
+        # Architecture-aware GUID assignment
+        if disk.type == PartitionTable.GPT.value and part_mod.is_root():
+            debug(f"Applying arch-specific GUID for {platform.machine()}")
+            partition.type_uuid = self.arch_handler.get_root_guid()
