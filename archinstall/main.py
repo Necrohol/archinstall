@@ -164,3 +164,46 @@ def main() -> int:
 
 if __name__ == '__main__':
 	sys.exit(main())
+
+
+import sys
+import os
+import importlib
+from archinstall.lib.output import info, error, debug
+from archinstall.lib.hardware import SysInfo
+from archinstall.lib.args import ArchConfigHandler
+
+def _log_sys_info():
+    debug(f'Hardware: {SysInfo.product_name()}; UEFI: {SysInfo.has_uefi()}')
+    debug(f'CPU: {SysInfo.cpu_model()}; RAM: {SysInfo.mem_available()}MB')
+
+def run():
+    arch_config_handler = ArchConfigHandler()
+    
+    if os.getuid() != 0:
+        print("Root privileges required.")
+        return 1
+
+    _log_sys_info()
+
+    # Commented out Arch-specific DB sync to allow Gentoo/Pentoo offline installs
+    # if not _fetch_arch_db():
+    #     return 1
+    info("Gentoo Environment detected. Skipping Arch DB sync.")
+
+    script = arch_config_handler.get_script()
+    if not script:
+        script = "gentoo" # Default to your new Gentoo script
+
+    mod_name = f'archinstall.scripts.{script}'
+    try:
+        module = importlib.import_module(mod_name)
+        module.main(arch_config_handler)
+    except ImportError:
+        error(f"Script {script} not found in archinstall.scripts")
+        return 1
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(run())
