@@ -28,6 +28,12 @@ required = [
 ]
 recommended = [
     "net-wireless/pi-bluetooth",
+
+    [packages.mapping]
+# Common tool -> Distro specific name
+"rpi-tools" = { arch = "raspberrypi-utils", gentoo = "sys-apps/raspberrypi-utils" }
+"firmware" = { arch = "raspberrypi-firmware", gentoo = "sys-kernel/raspberrypi-image" }
+
     "sys-apps/raspberrypi-utils"
 ]
 
