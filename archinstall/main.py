@@ -206,4 +206,15 @@ def run():
     return 0
 
 if __name__ == '__main__':
+
+	# At the very end of your installation script
+info("Installation complete. Performing final hardware check...")
+guard = BootIntegrityGuard(config, helper.hw_def)
+
+if guard.verify_all():
+    info("Ready to reboot!")
+else:
+    error("Hardware integrity failed. Dropping to emergency shell.")
+    os.system("/bin/bash")
+
     sys.exit(run())
