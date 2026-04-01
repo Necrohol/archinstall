@@ -1,5 +1,3 @@
-# Arch Linux installer - guided, templates etc.
-
 import importlib
 import os
 import sys
@@ -8,6 +6,7 @@ import time
 import traceback
 from pathlib import Path
 
+# Standard Archinstall Libs
 from archinstall.lib.args import ArchConfigHandler
 from archinstall.lib.disk.utils import disk_layouts
 from archinstall.lib.hardware import SysInfo
@@ -20,201 +19,89 @@ from archinstall.lib.translationhandler import tr
 from archinstall.lib.utils.util import running_from_iso
 from archinstall.tui.ui.components import tui
 
+# Your New Hardware Agnostic Libs
+from archinstall.lib.hardware import HardwareHelper, BootIntegrityGuard
 
 def _log_sys_info() -> None:
-	# Log various information about hardware before starting the installation. This might assist in troubleshooting
-	debug(f'Hardware model detected: {SysInfo.sys_vendor()} {SysInfo.product_name()}; UEFI mode: {SysInfo.has_uefi()}')
-	debug(f'Processor model detected: {SysInfo.cpu_model()}')
-	debug(f'Memory statistics: {SysInfo.mem_available()} available out of {SysInfo.mem_total()} total installed')
-	debug(f'Virtualization detected: {SysInfo.virtualization()}; is VM: {SysInfo.is_vm()}')
-	debug(f'Graphics devices detected: {SysInfo._graphics_devices().keys()}')
-
-	# For support reasons, we'll log the disk layout pre installation to match against post-installation layout
-	debug(f'Disk states before installing:\n{disk_layouts()}')
-
+    debug(f'Hardware model detected: {SysInfo.sys_vendor()} {SysInfo.product_name()}; UEFI mode: {SysInfo.has_uefi()}')
+    debug(f'Processor model detected: {SysInfo.cpu_model()}')
+    debug(f'Memory: {SysInfo.mem_available()} available / {SysInfo.mem_total()} total')
+    debug(f'Virtualization: {SysInfo.virtualization()}; is VM: {SysInfo.is_vm()}')
+    debug(f'Disk states before installing:\n{disk_layouts()}')
 
 def _check_online(wifi_handler: WifiHandler | None = None) -> bool:
-	try:
-		ping('1.1.1.1')
-	except OSError as ex:
-		if 'Network is unreachable' in str(ex):
-			if wifi_handler is not None:
-				result: bool = tui.run(wifi_handler)
-				if not result:
-					return False
-
-	return True
-
-
-def _fetch_arch_db() -> bool:
-	info('Fetching Arch Linux package database...')
-	try:
-		Pacman.run('-Sy')
-	except Exception as e:
-		error('Failed to sync Arch Linux package database.')
-		if 'could not resolve host' in str(e).lower():
-			error('Most likely due to a missing network connection or DNS issue.')
-
-		error('Run archinstall --debug and check /var/log/archinstall/install.log for details.')
-
-		debug(f'Failed to sync Arch Linux package database: {e}')
-		return False
-
-	return True
-
-
-def _list_scripts() -> str:
-	lines = ['The following are viable --script options:']
-
-	for file in (Path(__file__).parent / 'scripts').glob('*.py'):
-		if file.stem != '__init__':
-			lines.append(f'    {file.stem}')
-
-	return '\n'.join(lines)
-
+    try:
+        ping('1.1.1.1')
+    except OSError:
+        if wifi_handler is not None:
+            return tui.run(wifi_handler)
+    return True
 
 def run() -> int:
-	"""
-	This can either be run as the compiled and installed application: python setup.py install
-	OR straight as a module: python -m archinstall
-	In any case we will be attempting to load the provided script to be run from the scripts/ folder
-	"""
-	arch_config_handler = ArchConfigHandler()
-
-	if '--help' in sys.argv or '-h' in sys.argv:
-		arch_config_handler.print_help()
-		return 0
-
-	script = arch_config_handler.get_script()
-
-	if script == 'list':
-		print(_list_scripts())
-		return 0
-
-	if os.getuid() != 0:
-		print(tr('Archinstall requires root privileges to run. See --help for more.'))
-		return 1
-
-	_log_sys_info()
-
-	if not arch_config_handler.args.offline:
-		if not arch_config_handler.args.skip_wifi_check:
-			wifi_handler = WifiHandler()
-		else:
-			wifi_handler = None
-
-		if not _check_online(wifi_handler):
-			return 0
-
-		if not _fetch_arch_db():
-			return 1
-
-		if not arch_config_handler.args.skip_version_check:
-			upgrade = check_version_upgrade()
-
-			if upgrade:
-				text = tr('New version available') + f': {upgrade}'
-				info(text)
-				time.sleep(3)
-
-	if running_from_iso():
-		debug('Running from ISO (Live Mode)...')
-	else:
-		debug('Running from Host (H2T Mode)...')
-
-	mod_name = f'archinstall.scripts.{script}'
-	# by loading the module we'll automatically run the script
-	module = importlib.import_module(mod_name)
-	module.main(arch_config_handler)
-
-	return 0
-
-
-def _error_message(exc: Exception) -> None:
-	err = ''.join(traceback.format_exception(exc))
-	error(err)
-
-	text = textwrap.dedent(
-		"""\
-		Archinstall experienced the above error. If you think this is a bug, please report it to
-		https://github.com/archlinux/archinstall and include the log file "/var/log/archinstall/install.log".
-
-		Hint: To extract the log from a live ISO
-		curl -F 'file=@/var/log/archinstall/install.log' https://0x0.st
-		"""
-	)
-	warn(text)
-
-
-def main() -> int:
-	rc = 0
-	exc = None
-
-	try:
-		rc = run()
-	except Exception as e:
-		exc = e
-	finally:
-		if exc:
-			_error_message(exc)
-			rc = 1
-
-	return rc
-
-
-if __name__ == '__main__':
-	sys.exit(main())
-
-
-import sys
-import os
-import importlib
-from archinstall.lib.output import info, error, debug
-from archinstall.lib.hardware import SysInfo
-from archinstall.lib.args import ArchConfigHandler
-
-def _log_sys_info():
-    debug(f'Hardware: {SysInfo.product_name()}; UEFI: {SysInfo.has_uefi()}')
-    debug(f'CPU: {SysInfo.cpu_model()}; RAM: {SysInfo.mem_available()}MB')
-
-def run():
     arch_config_handler = ArchConfigHandler()
-    
+
+    if '--help' in sys.argv or '-h' in sys.argv:
+        arch_config_handler.print_help()
+        return 0
+
     if os.getuid() != 0:
-        print("Root privileges required.")
+        print(tr('Archinstall requires root privileges to run.'))
         return 1
 
     _log_sys_info()
 
-    # Commented out Arch-specific DB sync to allow Gentoo/Pentoo offline installs
-    # if not _fetch_arch_db():
-    #     return 1
-    info("Gentoo Environment detected. Skipping Arch DB sync.")
-
+    # --- AGNOSTIC MODE DETECTION ---
+    # We check if we are running the 'gentoo' or 'pentoo' script
     script = arch_config_handler.get_script()
-    if not script:
-        script = "gentoo" # Default to your new Gentoo script
+    is_gentoo_family = script in ['gentoo', 'pentoo']
 
+    if not arch_config_handler.args.offline:
+        wifi_handler = WifiHandler() if not arch_config_handler.args.skip_wifi_check else None
+        if not _check_online(wifi_handler):
+            return 0
+
+        # Only sync Pacman if we are NOT in Gentoo/Pentoo mode
+        if not is_gentoo_family:
+            info('Fetching Arch Linux package database...')
+            if not Pacman.run('-Sy'):
+                return 1
+        else:
+            info("Gentoo/Pentoo Environment detected. Skipping Arch DB sync.")
+
+    # --- HARDWARE ENGINE START ---
+    # Initialize the engine early to allow pre_install tweaks (like RPi5 PCIe)
+    hw_helper = HardwareHelper(arch_config_handler.args)
+    hw_helper.pre_install()
+
+    # --- SCRIPT EXECUTION ---
     mod_name = f'archinstall.scripts.{script}'
     try:
         module = importlib.import_module(mod_name)
+        # Pass the hardware helper into the script if needed
         module.main(arch_config_handler)
     except ImportError:
-        error(f"Script {script} not found in archinstall.scripts")
+        error(f"Script {script} not found.")
+        return 1
+    except Exception as e:
+        _error_message(e)
         return 1
 
-    return 0
+    # --- FINAL HARDWARE INTEGRITY GUARD ---
+    info("Installation complete. Performing final hardware check...")
+    guard = BootIntegrityGuard(arch_config_handler.args, hw_helper.hw_def)
+
+    if guard.verify_all():
+        info("Ready to reboot!")
+        return 0
+    else:
+        error("Hardware integrity failed. Dropping to emergency shell.")
+        os.system("/bin/bash")
+        return 1
+
+def _error_message(exc: Exception) -> None:
+    err = ''.join(traceback.format_exception(exc))
+    error(err)
+    warn("Archinstall experienced an error. Check /var/log/archinstall/install.log")
 
 if __name__ == '__main__':
-
-	# At the very end of your installation script
-info("Installation complete. Performing final hardware check...")
-guard = BootIntegrityGuard(config, helper.hw_def)
-
-if guard.verify_all():
-    info("Ready to reboot!")
-else:
-    error("Hardware integrity failed. Dropping to emergency shell.")
-    os.system("/bin/bash")
-
     sys.exit(run())
