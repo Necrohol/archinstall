@@ -1,0 +1,14 @@
+arch = "aarch64"
+device_type = "rpi5"
+cpu_family = "cortex-a76"
+gpu_driver = "vc4"
+# For Desktop/Server builds:
+# cpu_family = "zen4" 
+# gpu_driver = "amdgpu"
+
+[optimizations]
+helper = "lib/hardware/rpi_helper.py"
+march_native = true
+parallel_jobs = 5
+ionice = true
+
