@@ -1,0 +1,44 @@
+[distro]
+gentoo = true
+pentoo = true
+version = "2026.03"
+
+[profile]
+# The installer reads this to run: eselect profile set <selection>
+selected = "pentoo:features/pentoo/hardened/amd64/bleeding_edge"
+fallback = "default/linux/amd64/23.0/desktop"
+
+[overlays]
+# Synced on first boot/reboot
+sync_on_reboot = ["pentoo", "guru", "wayland-desktop"]
+source = "https://github.com/gentoo-mirror/"
+
+[storage]
+save_config_to_usb = true
+usb_label = "PENTOO_INSTALL"
+[distro]
+gentoo = true
+pentoo = true
+
+[storage]
+# 'wipe' ensures we start fresh on the RPi5 SD or NVMe
+wipe = true
+disk_path = "/dev/nvme0n1" # Or /dev/mmcblk0 for RPi
+layout_type = "gpt"
+
+[[storage.partitions]]
+mountpoint = "/boot"
+size = "1GB"
+filesystem = "vfat"
+flags = ["boot", "esp"]
+
+[[storage.partitions]]
+mountpoint = "/"
+size = "100%"
+filesystem = "f2fs" # Best for Flash/NVMe performance
+compress = true
+encrypt = false # Set to true to trigger LUKS logic
+
+[storage.swap]
+size = "8GB"
+zram = true # Recommended for RPi5 to avoid OOM during 'rsync'
