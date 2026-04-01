@@ -1,0 +1,30 @@
+[match]
+arch = "riscv64"
+# Matches boards using EDK2/UEFI payloads
+cpu_families = ["u74-mc", "k1", "th1520"] 
+
+[packages.arch]
+required = [
+    "riscv64-uefi-edk2", 
+    "grub-riscv64-efi",
+    "efibootmgr"
+]
+
+[packages.gentoo]
+required = [
+    "sys-boot/edk2-riscv64",
+    "sys-boot/grub:2",
+    "sys-boot/efibootmgr"
+]
+
+[boot]
+method = "uefi"
+# EDK2 on RISC-V looks for the standard EFI stub
+loader = "grub"
+grub_dtb = "/boot/dtbs/current-board.dtb"
+
+[usb_quirks]
+# Agnostic quirk for RISC-V XHCI controllers that strobe on init
+vendor_id = "0x1edb" 
+product_id = "0xbd70"
+flags = "0x0004"
