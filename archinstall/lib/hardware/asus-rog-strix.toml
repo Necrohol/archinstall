@@ -1,0 +1,19 @@
+[match]
+pci_ids = ["10de:2204", "8086:7a27"] # GPU and Chipset IDs
+chassis_type = "laptop"
+
+[packages]
+arch = ["asusctl", "rog-control-center", "supergfxctl"]
+gentoo = ["app-laptop/asusctl", "gui-apps/rog-control-center"]
+overlays = ["https://github.com/asus-linux/gentoo-overlay"]
+
+[kernel]
+params = "nvidia-drm.modeset=1 mem_sleep_default=deep"
+modules = ["asus_wmi", "hid_asus"]
+
+[services]
+systemd = ["asusd", "supergfxd"]
+openrc = ["asusd"]
+
+[scripts]
+post_install = "asusctl -c 80" # Set battery charge limit to 80%
