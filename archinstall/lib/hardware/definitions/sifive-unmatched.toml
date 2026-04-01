@@ -1,0 +1,31 @@
+[match]
+pci_ids = ["1b36:000d"] # PCI Bridge on SiFive
+cpu_models = ["sifive,u74-mc"]
+
+[packages.arch]
+required = [
+    "opensbi",
+    "u-boot-sifive",
+    "linux-riscv"
+]
+
+[boot]
+method = "extlinux"
+# SiFive needs a specific DTB passed via extlinux.conf
+grub_dtb = "/boot/dtbs/sifive/hifive-unmatched-a00.dtb"
+
+[kmod_options]
+# Force the AMDGPU driver if a card is in the PCIe slot
+amdgpu = "exp_hw_support=1"
+
+[packages.arch]
+required = [
+    "opensbi",
+    "u-boot-hifive-unmatched",
+    "linux-riscv",
+    "linux-firmware"
+]
+
+[boot]
+method = "extlinux"
+grub_dtb = "/boot/dtbs/sifive/hifive-unmatched-a00.dtb"
