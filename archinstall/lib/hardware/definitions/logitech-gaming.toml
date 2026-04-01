@@ -1,0 +1,34 @@
+[match]
+# example of ocasionaly quirky kb or mice... 
+# G13 Advanced Gameboard & G213 Prodigy
+pci_ids = ["046d:c21c", "046d:c336"]
+cpu_models = ["generic"]
+
+[packages.arch]
+# OpenRGB is the safest way to stop the 'strobe' crash
+required = ["openrgb", "hid-logitech-dj", "hid-logitech-hidpp"]
+recommended = ["g13-userspace-driver-git"]
+
+[packages.gentoo]
+required = [
+    "app-laptop/openrgb",
+    "sys-kernel/linux-firmware"
+]
+# Ensure HID_LOGITECH and HID_LOGITECH_HIDPP are in the kernel
+kconfig = ["CONFIG_HID_LOGITECH=y", "CONFIG_HID_LOGITECH_HIDPP=m"]
+
+[boot]
+# The 'Login Loop' Fix: 
+# We force the USB HID to poll slower or ignore specific interfaces if they strobe
+kernel_params = "usbhid.quirks=0x046d:0xc21c:0x0004"
+
+[scripts]
+post_install = [
+    # Force a static color on first boot to prevent RGB-init loops
+    "openrgb --device 'Logitech G213' --mode static --color 0000FF",
+    "systemctl enable openrgb"
+]
+
+[quirks]
+# This prevents the 'strobe' from being seen as a million rapid keypresses
+disable_autosuspend = true
