@@ -16,6 +16,10 @@ required = [
     "sys-boot/grub:2",
     "sys-boot/efibootmgr"
 ]
+[disk]
+layout = "riscv_uefi"
+alignment = 8192  # 4MiB in 512b sectors
+root_guid = "LINUX_ROOT_RISCV_64"
 
 [boot]
 method = "uefi"
