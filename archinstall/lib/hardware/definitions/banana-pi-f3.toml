@@ -1,0 +1,52 @@
+[match]
+cpu_models = ["spacemit k1", "banana pi bpi-f3"]
+arch = "riscv64"
+
+[packages.gentoo]
+# RISC-V needs OpenSBI and specific U-Boot tools
+required = [
+    "sys-boot/opensbi",
+    "sys-boot/u-boot-menu",
+    "sys-kernel/spacemit-kernel-bin"
+]
+
+[boot]
+method = "u-boot"
+# The F3 needs specific partition offsets for the SPL and OpenSBI
+config_pokes = [
+    "setenv bootargs 'root=PARTUUID=${uuid} rw rootwait console=ttyS0,115200'",
+    "setenv fdtfile 'spacemit/k1-bananapi-f3.dtb'"
+]
+
+[usb_quirks]
+# Some early RISC-V USB controllers are 'strobe-heavy'
+vendor_id = "0x1a2c"
+product_id = "0x0027"
+flags = "0x0400"
+
+[performance]
+# RISC-V toolchains are heavy; cap jobs to avoid OOM on 4GB models
+march = "rv64gc"
+ram_per_job_gb = 2
+[packages.arch]
+# Critical for BPI-F3 (SpacemiT K1)
+required = [
+    "opensbi",              # Supervisor Binary Interface
+    "uboot-tools",          # Needed for mkimage/fw_setenv
+    "linux-spacemit-bin",   # Vendor-optimized kernel for K1
+    "spacemit-firmware"     # Bluetooth/WiFi blobs
+]
+recommended = [
+    "mesa-vdpau",           # Hardware video accel
+    "libdrm-spacemit"       # Specific DRM for the K1 GPU
+]
+
+[boot]
+# Arch RISC-V often uses the /boot/extlinux/extlinux.conf pattern
+method = "extlinux"
+config_pokes = [
+    "LABEL Arch-RISCV",
+    "  LINUX /boot/vmlinuz-linux-spacemit",
+    "  FDT /boot/dtbs/spacemit/k1-bananapi-f3.dtb",
+    "  APPEND root=PARTUUID=${uuid} rw console=ttyS0,115200 earlycon=sbi"
+]
