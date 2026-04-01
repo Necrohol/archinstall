@@ -32,3 +32,24 @@ post_install = [
 [quirks]
 # This prevents the 'strobe' from being seen as a million rapid keypresses
 disable_autosuspend = true
+
+
+[match]
+pci_ids = ["046d:c21c"]
+
+[usb_quirks]
+vendor_id = "0x046d"
+product_id = "0xc21c"
+flags = "0x0004" # Ignore the extra broken HID interface
+disable_autosuspend = true
+[match]
+pci_ids = ["1a2c:0027"] # Example Generic ID
+
+
+# a "Shite Cord", fraying cord Generic Mouse (Thefor  "Disconnect" Fix) 
+#runs ok in live but loops login 90 miles hour
+[usb_quirks]
+vendor_id = "0x1a2c"
+product_id = "0x0027"
+flags = "0x0400" # Force constant polling to stabilize connection
+disable_autosuspend = true
