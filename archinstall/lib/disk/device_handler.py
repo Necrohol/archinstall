@@ -626,3 +626,24 @@ class DeviceHandler:
 
 
 device_handler = DeviceHandler()
+
+# Inside DeviceHandler._setup_partition
+if disk.type == PartitionTable.GPT.value:
+    # Get Arch-specific GUID from Hardware TOML, fallback to X86_64
+    gpt_guid = self.hw_def.get('disk', {}).get('root_guid', 'LINUX_ROOT_X86_64')
+    
+    if part_mod.is_root():
+        # Map string from TOML to the actual GUID bytes
+        partition.type_uuid = getattr(PartitionGUID, gpt_guid).bytes
+    elif PartitionFlag.LINUX_HOME not in part_mod.flags and part_mod.is_home():
+        partition.setFlag(PartitionFlag.LINUX_HOME.flag_id)
+
+# Inside DeviceHandler.format
+case FilesystemType.F2fs:
+    options.append('-f')
+    # Add extra attributes for better longevity on SD/MMC
+    # 'extra_attr,inode_checksum,sb_checksum'
+    extra_ops = self.hw_def.get('disk', {}).get('f2fs_options', 'extra_attr')
+    options.extend(('-O', extra_ops))
+
+
