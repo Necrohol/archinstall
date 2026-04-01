@@ -18,3 +18,19 @@ grub_dtb_line = 'GRUB_DTB="dtbs/broadcom/bcm2712-rpi-5-b.dtb"'
 # Firmware + config.txt Logic
 loader = "raspberrypi-firmware"
 config_pokes = ["arm_64bit=1", "dtparam=pciex1_gen=3"]
+
+
+[packages.gentoo]
+required = [
+    "sys-boot/grub", 
+    "sys-kernel/raspberrypi-sources",
+    "sys-apps/dtc" # Device Tree Compiler
+]
+recommended = [
+    "net-wireless/pi-bluetooth",
+    "sys-apps/raspberrypi-utils"
+]
+
+[packages.arch]
+required = ["grub", "raspberrypi-firmware", "linux-rpi"]
+recommended = ["raspbian-toolchain", "rpi-eeprom"]
