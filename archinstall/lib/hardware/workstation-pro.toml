@@ -1,0 +1,13 @@
+[match]
+pci_ids = ["8086:095a"] # Example Intel Wireless 7265
+
+[kernel]
+# Kill the pest before it bites
+blacklist = ["iwlwifi"]
+# Force specific firmware blobs to be included in Initramfs
+force_firmware = ["intel/ibt-11-5.sfi"]
+
+[scripts]
+post_install = [
+    "echo 'options iwlwifi 11n_disable=1' > /etc/modprobe.d/iwlwifi.conf"
+]
