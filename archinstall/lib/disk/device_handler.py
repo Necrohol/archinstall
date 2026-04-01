@@ -646,4 +646,44 @@ case FilesystemType.F2fs:
     extra_ops = self.hw_def.get('disk', {}).get('f2fs_options', 'extra_attr')
     options.extend(('-O', extra_ops))
 
+class PartitionGUID(Enum):
+	"""
+	Architecture-specific Root Partition GUIDs
+	References: https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
+	"""
+	LINUX_ROOT_X86_64 = '4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709'
+	LINUX_ROOT_ARM64  = 'B921B045-1DF0-41C3-AF44-4C6F280D3FAE'
+	LINUX_ROOT_RISCV64 = '5BE22121-1D04-4143-9E04-511B6195E68C'
 
+	@classmethod
+	def get_root_guid_for_arch(cls) -> str:
+		import platform
+		arch = platform.machine().lower()
+		
+		if 'x86_64' in arch:
+			return cls.LINUX_ROOT_X86_64.value
+		elif 'aarch64' in arch or 'arm64' in arch:
+			return cls.LINUX_ROOT_ARM64.value
+		elif 'riscv64' in arch:
+			return cls.LINUX_ROOT_RISCV64.value
+		
+		return cls.LINUX_ROOT_X86_64.value # Fallback
+
+	@property
+	def bytes(self) -> builtins.bytes:
+		return uuid.UUID(self.value).bytes
+
+	def _set_partition_guid(self, partition: Partition, part_mod: PartitionModification):
+		"""
+		Apply the correct GPT GUID based on the target mountpoint and architecture.
+		"""
+		if not part_mod.is_root():
+			return
+
+		# Only applies to GPT tables
+		if part_mod.status == ModificationStatus.Create:
+			target_guid = PartitionGUID.get_root_guid_for_arch()
+			debug(f"Setting Root GUID {target_guid} for architecture {platform.machine()}")
+			
+			# Logic here to interface with 'sgdisk' or 'parted' to set the type GUID
+			# Example: self.run_command(f"sgdisk -t {part_mod.partn}:{target_guid} {part_mod.dev_path}")
