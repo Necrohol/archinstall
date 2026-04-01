@@ -1650,4 +1650,25 @@ class PartitionGUID(Enum):
 	LINUX_ROOT_X86_64 = '4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709'
 	LINUX_ROOT_ARM64  = 'B921B045-1DF0-41C3-AF44-4C6F280D3FAE'
 	LINUX_ROOT_RISCV64 = '5BE22121-1D04-4143-9E04-511B6195E68C'
+class PartitionModification:
+	# ... existing fields (status, type, start, length, etc.) ...
+	_type_guid: str | None = None
+
+	@property
+	def type_guid(self) -> bytes | None:
+		"""
+		Returns the raw bytes of the GUID for GPT partitioning.
+		"""
+		if self._type_guid:
+			return uuid.UUID(self._type_guid).bytes
+		
+		# If no manual GUID is set, determine it via Architecture DNA
+		if self.is_root():
+			return PartitionGUID.get_root_guid_for_arch_bytes()
+		
+		return None
+
+	@type_guid.setter
+	def type_guid(self, value: str):
+		self._type_guid = value
 
