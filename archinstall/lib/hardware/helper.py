@@ -47,3 +47,30 @@ class HardwareHelper:
                         return data
             except Exception as e:
                 error(f"Error loading {toml_file.name}: {e}")
+def _apply_usb_quirks(self):
+    """
+    Prevents HID-induced login loops and 'strobe' crashes.
+    """
+    quirks = self.hw_def.get('usb_quirks', {})
+    if not quirks:
+        return
+
+    # 1. Kernel Quirks (usbhid.quirks)
+    # Format: 0xVENDOR:0xPRODUCT:0xQUIRK_FLAGS
+    # 0x0004 = HID_QUIRK_IGNORE (Prevents ghost inputs)
+    # 0x0400 = HID_QUIRK_ALWAYS_POLL (Fixes laggy/strobe wakeups)
+    vendor_id = quirks.get('vendor_id')
+    product_id = quirks.get('product_id')
+    flags = quirks.get('flags', '0x0004')
+
+    if vendor_id and product_id:
+        info(f"Injecting USB HID Quirk for {vendor_id}:{product_id}")
+        self._append_boot_param(f"usbhid.quirks={vendor_id}:{product_id}:{flags}")
+
+    # 2. Udev Rule (Power Management)
+    # Disabling autosuspend often stops the 'strobe' disconnect loop
+    if quirks.get('disable_autosuspend'):
+        rule = f'ACTION=="add", SUBSYSTEM=="usb", ATTR{{idVendor}}=="{vendor_id[2:]}", ATTR{{idProduct}}=="{product_id[2:]}", ATTR{{power/control}}="on"'
+        udev_path = self.target / f"etc/udev/rules.d/99-usb-quirk-{vendor_id}.rules"
+        udev_path.parent.mkdir(parents=True, exist_ok=True)
+        udev_path.write_text(rule + "\n")
