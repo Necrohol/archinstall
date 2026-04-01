@@ -30,6 +30,7 @@ recommended = [
     "net-wireless/pi-bluetooth",
 
     [packages.mapping]
+
 # Common tool -> Distro specific name
 "rpi-tools" = { arch = "raspberrypi-utils", gentoo = "sys-apps/raspberrypi-utils" }
 "firmware" = { arch = "raspberrypi-firmware", gentoo = "sys-kernel/raspberrypi-image" }
@@ -40,3 +41,14 @@ recommended = [
 [packages.arch]
 required = ["grub", "raspberrypi-firmware", "linux-rpi"]
 recommended = ["raspbian-toolchain", "rpi-eeprom"]
+
+[performance]
+# For RPi5 (Cortex-A76)
+march = "armv8.2-a+crypto"
+# Custom portage flags for ARM
+env_overrides = "LDFLAGS='-Wl,--as-needed'"
+
+[storage]
+# Use zstd compression for Btrfs/F2FS to save RPi SD/NVMe life
+compression = "zstd:3"
+
