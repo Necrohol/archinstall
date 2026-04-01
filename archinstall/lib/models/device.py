@@ -1610,3 +1610,44 @@ class LsblkInfo(BaseModel):
 	@classmethod
 	def fields(cls) -> list[str]:
 		return [field.alias or name for name, field in cls.model_fields.items() if name != 'children']
+
+class FilesystemType(Enum):
+	Btrfs = 'btrfs'
+	Ext2 = 'ext2'
+	Ext3 = 'ext3'
+	Ext4 = 'ext4'
+	F2fs = 'f2fs'
+	Fat12 = 'fat12'
+	Fat16 = 'fat16'
+	Fat32 = 'fat32'
+	# Ntfs = 'ntfs'  <-- REMOVED per #4279
+	Xfs = 'xfs'
+	LinuxSwap = 'linux-swap'
+
+	# this is not a FS known to parted, so be careful
+	# with the usage from this enum
+	Crypto_luks = 'crypto_LUKS'
+
+	def is_crypto(self) -> bool:
+		return self == FilesystemType.Crypto_luks
+
+	@property
+	def parted_value(self) -> str:
+		return self.value + '(v1)' if self == FilesystemType.LinuxSwap else self.value
+
+	@property
+	def installation_pkg(self) -> str | None:
+		match self:
+			case FilesystemType.Btrfs:
+				return 'btrfs-progs'
+			case FilesystemType.Xfs:
+				return 'xfsprogs'
+			case FilesystemType.F2fs:
+				return 'f2fs-tools'
+			case _:
+				return None
+class PartitionGUID(Enum):
+	LINUX_ROOT_X86_64 = '4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709'
+	LINUX_ROOT_ARM64  = 'B921B045-1DF0-41C3-AF44-4C6F280D3FAE'
+	LINUX_ROOT_RISCV64 = '5BE22121-1D04-4143-9E04-511B6195E68C'
+
