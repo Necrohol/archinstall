@@ -1,0 +1,56 @@
+[match]
+# Matches the Framework 16 Mainboard (AMD Ryzen 7040 Series)
+pci_ids = ["1022:14b5", "1002:7480"] 
+cpu_models = ["amd ryzen 7 7840hs", "amd ryzen 9 7940hs"]
+arch = "x86_64"
+
+[packages.arch]
+required = [
+    "fw-ectool-git",          # Fan and LED control
+    "libfprint",              # Fingerprint sensor
+    "fprintd",                # Fingerprint daemon
+    "amd-ucode",              # CPU Microcode
+    "mesa",                   # Vulkan/Radeon drivers
+    "power-profiles-daemon"   # Essential for battery life
+]
+recommended = [
+    "framework-laptop-utils", # Battery charge limiting
+    "brightnessctl"           # Backlight control for the matte display
+]
+
+[packages.gentoo]
+required = [
+    "sys-kernel/linux-firmware",
+    "sys-firmware/amd-ucode",
+    "sys-auth/fprintd",
+    "sys-apps/fw-ectool",
+    "media-libs/mesa"
+]
+recommended = [
+    "app-laptop/framework-laptop-utils",
+    "sys-power/power-profiles-daemon"
+]
+
+[boot.modern]
+method = "uefi"
+loader = "grub"
+# Fixes for AMD P-State and flickering on high-refresh panels
+grub_cmdline = "amd_pstate=active brightness_soft_limiter=1"
+
+[kernel]
+# Ensure these are built-in or in initramfs for the modular expansion cards
+modules = ["thunderbolt", "cros_ec", "cros_ec_lpcs", "amdgpu"]
+
+[performance]
+march = "znver4"
+# Framework 16 has great cooling; allow more aggressive jobs if RAM permits
+makeopts = "-j$(nproc)"
+
+[scripts]
+post_install = [
+    "systemctl enable fprintd",
+    "systemctl enable power-profiles-daemon"
+]
+
+[storage]
+recommended_fs = "btrfs" # Ideal for SSD snapshots on laptops
